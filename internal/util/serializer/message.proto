@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package serializer;
+
+option go_package = "github.com/mehuls/gopubsub/internal/util/serializer";
+
+import "google/protobuf/timestamp.proto";
+
+message PubSubMessage {
+  string id = 1;
+  bytes payload = 2;
+  map<string, string> attributes = 3;
+  google.protobuf.Timestamp publish_time = 4;
+  string version = 5;
+  map<string, string> metadata = 6;
+} 

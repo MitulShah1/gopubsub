@@ -72,56 +72,75 @@ type Error struct {
 }
 
 // ErrorCode is a typed error code
-type ErrorCode int
+type ErrorCode string
 
 const (
 	// ErrorCodeUnknown represents an unknown error
-	ErrorCodeUnknown ErrorCode = iota
+	ErrorCodeUnknown ErrorCode = "UNKNOWN_ERROR"
 
 	// ErrorCodeConnection represents connection errors
-	ErrorCodeConnection
+	ErrorCodeConnection ErrorCode = "CONNECTION_ERROR"
 
 	// ErrorCodeConfiguration represents configuration errors
-	ErrorCodeConfiguration
+	ErrorCodeConfiguration ErrorCode = "CONFIGURATION_ERROR"
 
 	// ErrorCodeAuthentication represents authentication errors
-	ErrorCodeAuthentication
+	ErrorCodeAuthentication ErrorCode = "AUTHENTICATION_ERROR"
 
 	// ErrorCodeAuthorization represents authorization errors
-	ErrorCodeAuthorization
+	ErrorCodeAuthorization ErrorCode = "AUTHORIZATION_ERROR"
 
 	// ErrorCodePublish represents publishing errors
-	ErrorCodePublish
+	ErrorCodePublish ErrorCode = "PUBLISH_ERROR"
 
 	// ErrorCodeSubscribe represents subscription errors
-	ErrorCodeSubscribe
+	ErrorCodeSubscribe ErrorCode = "SUBSCRIBE_ERROR"
 
 	// ErrorCodeAcknowledge represents acknowledgment errors
-	ErrorCodeAcknowledge
+	ErrorCodeAcknowledge ErrorCode = "ACKNOWLEDGE_ERROR"
 
 	// ErrorCodeTimeout represents timeout errors
-	ErrorCodeTimeout
+	ErrorCodeTimeout ErrorCode = "TIMEOUT_ERROR"
 
 	// ErrorCodeNotFound represents resource not found errors
-	ErrorCodeNotFound
+	ErrorCodeNotFound ErrorCode = "NOT_FOUND_ERROR"
 
 	// ErrorCodeAlreadyExists represents resource already exists errors
-	ErrorCodeAlreadyExists
+	ErrorCodeAlreadyExists ErrorCode = "ALREADY_EXISTS_ERROR"
 
 	// ErrorCodeInvalidMessage represents invalid message errors
-	ErrorCodeInvalidMessage
+	ErrorCodeInvalidMessage ErrorCode = "INVALID_MESSAGE_ERROR"
 
 	// ErrorCodeResourceExhaustion represents resource exhaustion errors
-	ErrorCodeResourceExhaustion
+	ErrorCodeResourceExhaustion ErrorCode = "RESOURCE_EXHAUSTION_ERROR"
+
+	// ErrorCodeClient represents client errors
+	ErrorCodeClient ErrorCode = "CLIENT_ERROR"
+
+	// ErrorCodePublisher represents publisher errors
+	ErrorCodePublisher ErrorCode = "PUBLISHER_ERROR"
+
+	// ErrorCodeSubscriber represents subscriber errors
+	ErrorCodeSubscriber ErrorCode = "SUBSCRIBER_ERROR"
+
+	// Client-specific error codes
+	ErrClientClosed ErrorCode = "CLIENT_CLOSED"
+	ErrClientConfig ErrorCode = "CLIENT_CONFIG"
+)
+
+// Client-specific error messages
+const (
+	ErrMsgClientClosed  = "client is already closed"
+	ErrMsgInvalidConfig = "invalid client configuration"
 )
 
 // Error implements the error interface
 func (e *Error) Error() string {
 	if e.Original != nil {
-		return fmt.Sprintf("%s: %s (broker: %s, code: %d, retryable: %t)",
+		return fmt.Sprintf("%s: %s (broker: %s, code: %s, retryable: %t)",
 			e.Message, e.Original.Error(), e.BrokerType, e.Code, e.Retryable)
 	}
-	return fmt.Sprintf("%s (broker: %s, code: %d, retryable: %t)",
+	return fmt.Sprintf("%s (broker: %s, code: %s, retryable: %t)",
 		e.Message, e.BrokerType, e.Code, e.Retryable)
 }
 
@@ -214,35 +233,3 @@ func IsPermissionError(err error) bool {
 
 	return errors.Is(err, ErrPermissionDenied)
 }
-
-// BrokerType defines the type of message broker
-type BrokerType string
-
-const (
-	// KafkaBroker represents Apache Kafka
-	KafkaBroker BrokerType = "kafka"
-
-	// NATSBroker represents NATS messaging system
-	NATSBroker BrokerType = "nats"
-
-	// RabbitMQBroker represents RabbitMQ
-	RabbitMQBroker BrokerType = "rabbitmq"
-
-	// GooglePubSub represents Google Cloud Pub/Sub
-	GooglePubSub BrokerType = "google"
-
-	// AzureEventHub represents Azure Event Hubs
-	AzureEventHub BrokerType = "eventhub"
-
-	// RedisPubSub represents Redis Pub/Sub
-	RedisPubSub BrokerType = "redis"
-
-	// AmazonSNS represents Amazon SNS
-	AmazonSNS BrokerType = "sns"
-
-	// AmazonSQS represents Amazon SQS
-	AmazonSQS BrokerType = "sqs"
-
-	// InMemoryBroker represents an in-memory broker for testing
-	InMemoryBroker BrokerType = "memory"
-)

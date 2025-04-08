@@ -2,6 +2,8 @@ package pubsub
 
 import (
 	"time"
+
+	"github.com/MitulShah1/gopubsub/internal/util/failover"
 )
 
 // SubscribeOptions defines options for subscription
@@ -31,7 +33,7 @@ type SubscribeOptions struct {
 	Offset SubscriptionOffset
 
 	// RetryConfig defines retry behavior for subscribe operations
-	RetryConfig RetryConfig
+	RetryConfig *failover.RetryConfig
 
 	// Additional broker-specific options
 	BrokerSpecificOpts map[string]interface{}
@@ -87,12 +89,13 @@ func defaultSubscribeOptions() *SubscribeOptions {
 }
 
 // defaultRetryConfig returns the default retry configuration
-func defaultRetryConfig() RetryConfig {
-	return RetryConfig{
-		MaxRetries:        3,
-		InitialBackoff:    100 * time.Millisecond,
-		MaxBackoff:        10 * time.Second,
-		BackoffMultiplier: 2.0,
+func defaultRetryConfig() *failover.RetryConfig {
+	return &failover.RetryConfig{
+		MaxRetries:   3,
+		InitialDelay: 100 * time.Millisecond,
+		MaxDelay:     time.Second,
+		Multiplier:   2.0,
+		JitterFactor: 0.1,
 	}
 }
 
@@ -157,13 +160,14 @@ func WithOffset(offset SubscriptionOffset) SubscribeOption {
 }
 
 // WithSubscriptionRetry configures retry behavior for subscription operations
-func WithSubscriptionRetry(maxRetries int, initialBackoff time.Duration, maxBackoff time.Duration, multiplier float64) SubscribeOption {
+func WithSubscriptionRetry(maxRetries int, initialDelay time.Duration, maxDelay time.Duration, multiplier float64, jitterFactor float64) SubscribeOption {
 	return func(o *SubscribeOptions) {
-		o.RetryConfig = RetryConfig{
-			MaxRetries:        maxRetries,
-			InitialBackoff:    initialBackoff,
-			MaxBackoff:        maxBackoff,
-			BackoffMultiplier: multiplier,
+		o.RetryConfig = &failover.RetryConfig{
+			MaxRetries:   maxRetries,
+			InitialDelay: initialDelay,
+			MaxDelay:     maxDelay,
+			Multiplier:   multiplier,
+			JitterFactor: jitterFactor,
 		}
 	}
 }
@@ -237,8 +241,8 @@ func WithBrokerSpecificNackOption(key string, value interface{}) NackOption {
 	}
 }
 
-// applySubscribeOptions applies the provided options to the default options
-func applySubscribeOptions(opts ...SubscribeOption) *SubscribeOptions {
+// ApplySubscribeOptions applies the provided options to the default options
+func ApplySubscribeOptions(opts ...SubscribeOption) *SubscribeOptions {
 	options := defaultSubscribeOptions()
 	for _, opt := range opts {
 		opt(options)
