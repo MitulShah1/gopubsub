@@ -49,6 +49,11 @@ func (m *Message) String() string {
 
 // Clone creates a deep copy of the message
 func (m *Message) Clone() *Message {
+	if m == nil {
+		return nil
+	}
+
+	// Create a new message with the same basic fields
 	clone := &Message{
 		ID:              m.ID,
 		Payload:         make([]byte, len(m.Payload)),
@@ -59,9 +64,14 @@ func (m *Message) Clone() *Message {
 		OriginalMessage: m.OriginalMessage,
 	}
 
+	// Copy the data
 	copy(clone.Payload, m.Payload)
-	for k, v := range m.Attributes {
-		clone.Attributes[k] = v
+
+	// Copy the attributes
+	if m.Attributes != nil {
+		for k, v := range m.Attributes {
+			clone.Attributes[k] = v
+		}
 	}
 
 	return clone

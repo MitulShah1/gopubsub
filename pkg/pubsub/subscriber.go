@@ -2,6 +2,7 @@ package pubsub
 
 import (
 	"context"
+	"fmt"
 )
 
 // MessageHandler is a function type for message processing
@@ -24,18 +25,26 @@ type Subscriber interface {
 }
 
 // SubscriberFactory is a function type for creating subscribers
-type SubscriberFactory func(config map[string]interface{}) (Subscriber, error)
+type SubscriberFactory func(config BrokerConfig) (Subscriber, error)
 
 // subscriberFactories stores registered subscriber factories by broker type
 var subscriberFactories = make(map[BrokerType]SubscriberFactory)
+
+// subscriberConfigValidators stores registered subscriber config validators by broker type
+var subscriberConfigValidators = make(map[BrokerType]func(BrokerConfig) error)
 
 // RegisterSubscriberFactory registers a subscriber factory for a broker type
 func RegisterSubscriberFactory(brokerType BrokerType, factory SubscriberFactory) {
 	subscriberFactories[brokerType] = factory
 }
 
+// RegisterSubscriberConfigValidator registers a subscriber config validator for a broker type
+func RegisterSubscriberConfigValidator(brokerType BrokerType, validator func(BrokerConfig) error) {
+	subscriberConfigValidators[brokerType] = validator
+}
+
 // NewSubscriber creates a new subscriber for the specified broker type
-func NewSubscriber(brokerType BrokerType, config map[string]interface{}) (Subscriber, error) {
+func NewSubscriber(brokerType BrokerType, config BrokerConfig) (Subscriber, error) {
 	factory, exists := subscriberFactories[brokerType]
 	if !exists {
 		return nil, NewError(
@@ -45,6 +54,30 @@ func NewSubscriber(brokerType BrokerType, config map[string]interface{}) (Subscr
 			string(brokerType),
 			false,
 		)
+	}
+
+	// Validate broker type matches configuration
+	if config.GetBrokerType() != brokerType {
+		return nil, NewError(
+			fmt.Errorf("broker type mismatch: expected %s, got %s", brokerType, config.GetBrokerType()),
+			ErrorCodeConfiguration,
+			"broker type mismatch",
+			"",
+			false,
+		)
+	}
+
+	// Validate configuration if validator exists
+	if validator, exists := subscriberConfigValidators[brokerType]; exists {
+		if err := validator(config); err != nil {
+			return nil, NewError(
+				err,
+				ErrorCodeConfiguration,
+				"invalid subscriber configuration",
+				string(brokerType),
+				false,
+			)
+		}
 	}
 
 	return factory(config)

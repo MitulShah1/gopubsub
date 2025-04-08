@@ -32,7 +32,7 @@ pubsub/
 ├── test/
 │   ├── integration/
 │   └── mocks/
-├── docs/                     # Optional
+├── docs/                     
 ├── go.mod
 ├── go.sum
 ├── README.md

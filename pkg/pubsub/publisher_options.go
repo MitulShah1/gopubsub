@@ -2,6 +2,8 @@ package pubsub
 
 import (
 	"time"
+
+	"github.com/MitulShah1/gopubsub/internal/util/failover"
 )
 
 // PublishOptions defines options for publishing
@@ -16,25 +18,10 @@ type PublishOptions struct {
 	Persistent bool
 
 	// RetryConfig for publish operations
-	RetryConfig RetryConfig
+	RetryConfig *failover.RetryConfig
 
 	// Additional broker-specific options stored as key-value pairs
 	BrokerSpecificOpts map[string]interface{}
-}
-
-// RetryConfig defines retry behavior for operations
-type RetryConfig struct {
-	// MaxRetries is the maximum number of retries before giving up
-	MaxRetries int
-
-	// InitialBackoff is the initial backoff duration
-	InitialBackoff time.Duration
-
-	// MaxBackoff is the maximum backoff duration
-	MaxBackoff time.Duration
-
-	// BackoffMultiplier is the factor by which the backoff increases
-	BackoffMultiplier float64
 }
 
 // PublishOption is a function that configures PublishOptions
@@ -46,11 +33,12 @@ func defaultPublishOptions() *PublishOptions {
 		Timeout:    30 * time.Second,
 		Priority:   0,
 		Persistent: true,
-		RetryConfig: RetryConfig{
-			MaxRetries:        3,
-			InitialBackoff:    100 * time.Millisecond,
-			MaxBackoff:        10 * time.Second,
-			BackoffMultiplier: 2.0,
+		RetryConfig: &failover.RetryConfig{
+			MaxRetries:   3,
+			InitialDelay: 100 * time.Millisecond,
+			MaxDelay:     time.Second,
+			Multiplier:   2.0,
+			JitterFactor: 0.1,
 		},
 		BrokerSpecificOpts: make(map[string]interface{}),
 	}
@@ -78,13 +66,14 @@ func WithPersistence(persistent bool) PublishOption {
 }
 
 // WithPublishRetry configures retry behavior for publish operations
-func WithPublishRetry(maxRetries int, initialBackoff time.Duration, maxBackoff time.Duration, multiplier float64) PublishOption {
+func WithPublishRetry(maxRetries int, initialDelay time.Duration, maxDelay time.Duration, multiplier float64, jitterFactor float64) PublishOption {
 	return func(o *PublishOptions) {
-		o.RetryConfig = RetryConfig{
-			MaxRetries:        maxRetries,
-			InitialBackoff:    initialBackoff,
-			MaxBackoff:        maxBackoff,
-			BackoffMultiplier: multiplier,
+		o.RetryConfig = &failover.RetryConfig{
+			MaxRetries:   maxRetries,
+			InitialDelay: initialDelay,
+			MaxDelay:     maxDelay,
+			Multiplier:   multiplier,
+			JitterFactor: jitterFactor,
 		}
 	}
 }
@@ -97,4 +86,13 @@ func WithBrokerSpecificPublishOption(key string, value interface{}) PublishOptio
 		}
 		o.BrokerSpecificOpts[key] = value
 	}
+}
+
+// ApplyPublishOptions applies a list of PublishOption functions to the default options
+func ApplyPublishOptions(opts ...PublishOption) *PublishOptions {
+	options := defaultPublishOptions()
+	for _, opt := range opts {
+		opt(options)
+	}
+	return options
 }
